@@ -1,8 +1,33 @@
 # Claude Code Reverse
 
-> You can switch the API endpoint by modifying the ANTHROPIC_BASE_URL environment variable.
+![demo.png](https://github.com/musistudio/claude-code-reverse/blob/main/screenshoots/demo.png)
+
+## Usage
+1. Clone this repo
+```shell
+git clone git@github.com:musistudio/claude-code-reverse.git
+```
+
+2. Install dependencies
+```shell
+npm i
+```
+
+3. Change OpenAI apiKey and baseUrl in index.mjs file
+
+4. Start server
+```shell
+node index.mjs
+```
+
+5. Set environment variable
+```shell
+export DISABLE_PROMPT_CACHING=1
+export ANTHROPIC_BASE_URL="http://127.0.0.1:3456"
+```
 
 - Init Request
+
 POST /v1/messages?beta=true
 ```json
 {
@@ -30,6 +55,7 @@ POST /v1/messages?beta=true
   
 
 - Ask Request
+
 POST /v1/messages?beta=true
 ```json
 {
@@ -59,6 +85,7 @@ POST /v1/messages?beta=true
 
 
 - Ask Request 2
+
 POST /v1/messages?beta=true
 ```json
 {
