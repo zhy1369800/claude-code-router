@@ -3,6 +3,10 @@
 ![demo.png](https://github.com/musistudio/claude-code-reverse/blob/main/screenshoots/demo.png)
 
 ## Usage
+0. Install Claude Code
+```shell
+npm install -g @anthropic-ai/claude-code
+```
 1. Clone this repo
 ```shell
 git clone git@github.com:musistudio/claude-code-reverse.git
@@ -23,6 +27,7 @@ node index.mjs
 5. Set environment variable
 ```shell
 export DISABLE_PROMPT_CACHING=1
+export ANTHROPIC_AUTH_TOKEN="test"
 export ANTHROPIC_BASE_URL="http://127.0.0.1:3456"
 ```
 

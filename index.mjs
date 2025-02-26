@@ -1,14 +1,23 @@
 import express from "express";
 import { OpenAI } from "openai";
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 const port = 3456;
 
-app.use(express.json());
+app.use(express.json({limit:'500mb'}));
+
+// Read variables from .env file
+const apiKey = process.env.OPENAI_API_KEY;
+const baseUrl = process.env.OPENAI_BASE_URL;
+const defaultModel = process.env.OPENAI_MODEL;
 
 const chatClient = new OpenAI({
-  apiKey: "",
-  baseURL: "",
+  apiKey: apiKey,
+  baseURL: baseUrl,
 });
 
 // Define POST /v1/messages interface
@@ -28,12 +37,17 @@ app.post("/v1/messages", async (req, res) => {
         return {
           role: item.role,
           content: item.content.map((it) => {
-            return {
+            const msg = {
+              ...it,
               type: ["tool_result", "tool_use"].includes(it?.type)
                 ? "text"
                 : it?.type,
-              text: it?.content || it?.text || "",
             };
+            if (msg.type === 'text') {
+              msg.text = it?.content ? JSON.stringify(it.content) : it?.text || ""
+              delete msg.content
+            }
+            return msg;
           }),
         };
       }
@@ -43,7 +57,7 @@ app.post("/v1/messages", async (req, res) => {
       };
     });
     const data = {
-      model: "qwen-max-2025-01-25",
+      model: defaultModel,
       messages: [
         ...system.map((item) => ({
           role: "system",
@@ -100,7 +114,6 @@ app.post("/v1/messages", async (req, res) => {
 
     for await (const chunk of completion) {
       const delta = chunk.choices[0].delta;
-
       // Handle tool call response
       if (delta.tool_calls && delta.tool_calls.length > 0) {
         const toolCall = delta.tool_calls[0];
@@ -237,9 +250,7 @@ app.post("/v1/messages", async (req, res) => {
     };
 
     res.write(
-      `event: content_block_stop\ndata: ${JSON.stringify(
-        contentBlockStop
-      )}\n\n`
+      `event: content_block_stop\ndata: ${JSON.stringify(contentBlockStop)}\n\n`
     );
 
     // Send message_delta event with appropriate stop_reason
@@ -254,9 +265,7 @@ app.post("/v1/messages", async (req, res) => {
     };
 
     res.write(
-      `event: message_delta\ndata: ${JSON.stringify(
-        messageDelta
-      )}\n\n`
+      `event: message_delta\ndata: ${JSON.stringify(messageDelta)}\n\n`
     );
 
     // Send message_stop event
@@ -264,11 +273,7 @@ app.post("/v1/messages", async (req, res) => {
       type: "message_stop",
     };
 
-    res.write(
-      `event: message_stop\ndata: ${JSON.stringify(
-        messageStop
-      )}\n\n`
-    );
+    res.write(`event: message_stop\ndata: ${JSON.stringify(messageStop)}\n\n`);
     res.end();
   } catch (error) {
     console.error("Error in streaming response:", error);
@@ -279,6 +284,32 @@ app.post("/v1/messages", async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
-});
+import { existsSync, writeFileSync } from 'fs';
+
+async function initializeClaudeConfig() {
+  const homeDir = process.env.HOME;
+  const configPath = `${homeDir}/.claude.json`;
+
+  if (!existsSync(configPath)) {
+    const userID = Array.from({ length: 64 }, () => Math.random().toString(16)[2]).join('');
+    const configContent = {
+      numStartups: 184,
+      autoUpdaterStatus: "enabled",
+      userID,
+      hasCompletedOnboarding: true,
+      lastOnboardingVersion: "0.2.9",
+      projects: {}
+    };
+
+    writeFileSync(configPath, JSON.stringify(configContent, null, 2));
+  }
+}
+
+async function run() {
+  await initializeClaudeConfig();
+
+  app.listen(port, () => {
+    console.log(`Example app listening on port ${port}`);
+  });
+}
+run()
