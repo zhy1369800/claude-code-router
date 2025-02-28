@@ -1,26 +1,31 @@
 import express from "express";
 import { OpenAI } from "openai";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
+import { existsSync } from "fs";
+import { writeFile } from "fs/promises";
+import { Router } from "./router.mjs";
 
-// Load environment variables
 dotenv.config();
-
 const app = express();
 const port = 3456;
+app.use(express.json({ limit: "500mb" }));
 
-app.use(express.json({limit:'500mb'}));
+let client;
+if (process.env.ENABLE_ROUTER) {
+  client = new Router();
+} else {
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    baseURL: process.env.OPENAI_BASE_URL,
+  });
+  client = {
+    call: (data) => {
+      data.model = process.env.OPENAI_MODEL;
+      return openai.chat.completions.create(data);
+    },
+  };
+}
 
-// Read variables from .env file
-const apiKey = process.env.OPENAI_API_KEY;
-const baseUrl = process.env.OPENAI_BASE_URL;
-const defaultModel = process.env.OPENAI_MODEL;
-
-const chatClient = new OpenAI({
-  apiKey: apiKey,
-  baseURL: baseUrl,
-});
-
-// Define POST /v1/messages interface
 app.post("/v1/messages", async (req, res) => {
   try {
     let {
@@ -32,6 +37,7 @@ app.post("/v1/messages", async (req, res) => {
       metadata,
       tools,
     } = req.body;
+
     messages = messages.map((item) => {
       if (item.content instanceof Array) {
         return {
@@ -43,9 +49,11 @@ app.post("/v1/messages", async (req, res) => {
                 ? "text"
                 : it?.type,
             };
-            if (msg.type === 'text') {
-              msg.text = it?.content ? JSON.stringify(it.content) : it?.text || ""
-              delete msg.content
+            if (msg.type === "text") {
+              msg.text = it?.content
+                ? JSON.stringify(it.content)
+                : it?.text || "";
+              delete msg.content;
             }
             return msg;
           }),
@@ -57,7 +65,7 @@ app.post("/v1/messages", async (req, res) => {
       };
     });
     const data = {
-      model: defaultModel,
+      model,
       messages: [
         ...system.map((item) => ({
           role: "system",
@@ -69,16 +77,18 @@ app.post("/v1/messages", async (req, res) => {
       stream: true,
     };
     if (tools) {
-      data.tools = tools.map((item) => ({
-        type: "function",
-        function: {
-          name: item.name,
-          description: item.description,
-          parameters: item.input_schema,
-        },
-      }));
+      data.tools = tools
+        .filter((tool) => !["StickerRequest"].includes(tool.name))
+        .map((item) => ({
+          type: "function",
+          function: {
+            name: item.name,
+            description: item.description,
+            parameters: item.input_schema,
+          },
+        }));
     }
-    const completion = await chatClient.chat.completions.create(data);
+    const completion = await client.call(data);
 
     // Set SSE response headers
     res.setHeader("Content-Type", "text/event-stream");
@@ -114,7 +124,6 @@ app.post("/v1/messages", async (req, res) => {
 
     for await (const chunk of completion) {
       const delta = chunk.choices[0].delta;
-      // Handle tool call response
       if (delta.tool_calls && delta.tool_calls.length > 0) {
         const toolCall = delta.tool_calls[0];
 
@@ -284,24 +293,23 @@ app.post("/v1/messages", async (req, res) => {
   }
 });
 
-import { existsSync, writeFileSync } from 'fs';
-
 async function initializeClaudeConfig() {
   const homeDir = process.env.HOME;
   const configPath = `${homeDir}/.claude.json`;
-
   if (!existsSync(configPath)) {
-    const userID = Array.from({ length: 64 }, () => Math.random().toString(16)[2]).join('');
+    const userID = Array.from(
+      { length: 64 },
+      () => Math.random().toString(16)[2]
+    ).join("");
     const configContent = {
       numStartups: 184,
       autoUpdaterStatus: "enabled",
       userID,
       hasCompletedOnboarding: true,
       lastOnboardingVersion: "0.2.9",
-      projects: {}
+      projects: {},
     };
-
-    writeFileSync(configPath, JSON.stringify(configContent, null, 2));
+    await writeFile(configPath, JSON.stringify(configContent, null, 2));
   }
 }
 
@@ -312,4 +320,4 @@ async function run() {
     console.log(`Example app listening on port ${port}`);
   });
 }
-run()
+run();
