@@ -12,7 +12,7 @@
 
 - [x] Using the qwen-max-0125 model as the tool invoker
 
-- [x] Using deepseek-v3 as the encoding model
+- [x] Using deepseek-v3 as the coder model
 
 - [x] Using deepseek-r1 as the reasoning model
 
@@ -41,7 +41,7 @@ npm i
 3. Start server
 
 ```shell
-# Alternatively, you can create an. env file in the repo directory
+# Alternatively, you can create an .env file in the repo directory
 
 ## disable router
 ENABLE_ROUTER=false
