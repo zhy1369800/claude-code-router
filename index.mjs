@@ -12,7 +12,12 @@ app.use(express.json({ limit: "500mb" }));
 
 let client;
 if (process.env.ENABLE_ROUTER) {
-  client = new Router();
+  const router = new Router();
+  client = {
+    call: (data) => {
+      return router.route(data);
+    },
+  };
 } else {
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
