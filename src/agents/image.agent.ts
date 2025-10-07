@@ -57,9 +57,10 @@ export class ImageAgent implements IAgent {
   shouldHandle(req: any, config: any): boolean {
     if (!config.Router.image || req.body.model === config.Router.image) return false;
     const lastMessage = req.body.messages[req.body.messages.length - 1]
-    if (!config.forceUseImageAgent && lastMessage.role === 'user' && Array.isArray(lastMessage.content) && lastMessage.content.find((item: any) => item.type === 'image' || (Array.isArray(item?.content) && item.content.some((sub: any) => sub.type === 'image')))) {
+    if (!config.forceUseImageAgent && lastMessage.role === 'user' && Array.isArray(lastMessage.content) 
+      && lastMessage.content.find((item: any) => item.type === 'image' || (Array.isArray(item?.content) && item.content.some((sub: any) => sub.type === 'image')))) {
       req.body.model = config.Router.image
-      const images = []
+      const images: any[] = []
       lastMessage.content.filter((item: any) => item.type === 'tool_result').forEach((item: any) => {
         item.content.forEach((element: any) => {
           if (element.type === 'image') {
@@ -142,7 +143,7 @@ export class ImageAgent implements IAgent {
 
         const userMessage = context.req.body.messages[context.req.body.messages.length - 1]
         if (userMessage.role === 'user' && Array.isArray(userMessage.content)) {
-          const msgs = userMessage.content.filter(item => item.type === 'text' && !item.text.includes('This is an image, if you need to view or analyze it, you need to extract the imageId'))
+          const msgs = userMessage.content.filter((item: any) => item.type === 'text' && !item.text.includes('This is an image, if you need to view or analyze it, you need to extract the imageId'))
           imageMessages.push(...msgs)
         }
 
@@ -223,7 +224,7 @@ Your response should consistently follow this rule whenever image-related analys
         } else if (msg.type === "text" && msg.text.includes('[Image #')) {
           msg.text = msg.text.replace(/\[Image #\d+\]/g, '');
         } else if (msg.type === "tool_result") {
-          if (Array.isArray(msg.content) && msg.content.some(ele => ele.type === "image")) {
+          if (Array.isArray(msg.content) && msg.content.some((ele: any) => ele.type === "image")) {
             imageCache.storeImage(`${req.id}_Image#${imgId}`, msg.content[0].source);
             msg.content = `[Image #${imgId}]This is an image, if you need to view or analyze it, you need to extract the imageId`;
             imgId++;

@@ -5,8 +5,8 @@ export class SSEParserTransform extends TransformStream<string, any> {
     constructor() {
         super({
             transform: (chunk: string, controller) => {
-                const decoder = new TextDecoder();
-                const text = decoder.decode(chunk);
+                // 如果chunk已经是字符串，直接使用；否则使用TextDecoder解码
+                const text = typeof chunk === 'string' ? chunk : new TextDecoder().decode(new TextEncoder().encode(chunk));
                 this.buffer += text;
                 const lines = this.buffer.split('\n');
 

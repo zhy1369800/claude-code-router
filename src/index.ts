@@ -95,10 +95,15 @@ async function run(options: RunOptions = {}) {
     : port;
 
   // Configure logger based on config settings
-  const pad = num => (num > 9 ? "" : "0") + num;
-  const generator = (time, index) => {
+  const pad = (num: number): string => (num > 9 ? "" : "0") + num;
+  const generator = (time: number | Date, index?: number): string => {
     if (!time) {
       time = new Date()
+    }
+
+    // Convert number to Date if needed
+    if (typeof time === 'number') {
+      time = new Date(time);
     }
 
     var month = time.getFullYear() + "" + pad(time.getMonth() + 1);
@@ -147,19 +152,20 @@ async function run(options: RunOptions = {}) {
     server.logger.error("Unhandled rejection at:", promise, "reason:", reason);
   });
   // Add async preHandler hook for authentication
-  server.addHook("preHandler", async (req, reply) => {
-    return new Promise((resolve, reject) => {
-      const done = (err?: Error) => {
+  server.addHook("preHandler", async (req: any, reply: any) => {
+    return new Promise<void>((resolve, reject) => {
+      const done = (err?: Error): void => {
         if (err) reject(err);
+          
         else resolve();
       };
       // Call the async auth function
       apiKeyAuth(config)(req, reply, done).catch(reject);
     });
   });
-  server.addHook("preHandler", async (req, reply) => {
+  server.addHook("preHandler", async (req: any, reply: any) => {
     if (req.url.startsWith("/v1/messages")) {
-      const useAgents = []
+      const useAgents: string[] = []
 
       for (const agent of agentsManager.getAllAgents()) {
         if (agent.shouldHandle(req, config)) {
@@ -194,10 +200,10 @@ async function run(options: RunOptions = {}) {
       });
     }
   });
-  server.addHook("onError", async (request, reply, error) => {
+  server.addHook("onError", async (request: any, reply: any, error: any) => {
     event.emit('onError', request, reply, error);
   })
-  server.addHook("onSend", (req, reply, payload, done) => {
+  server.addHook("onSend", (req: any, reply: any, payload: any, done: any) => {
     if (req.sessionId && req.url.startsWith("/v1/messages")) {
       if (payload instanceof ReadableStream) {
         if (req.agents) {
@@ -281,7 +287,7 @@ async function run(options: RunOptions = {}) {
                 if (!response.ok) {
                   return undefined;
                 }
-                const stream = response.body!.pipeThrough(new SSEParserTransform())
+                const stream = (response.body as any)!.pipeThrough(new SSEParserTransform())
                 const reader = stream.getReader()
                 while (true) {
                   try {
@@ -371,7 +377,7 @@ async function run(options: RunOptions = {}) {
     }
     done(null, payload)
   });
-  server.addHook("onSend", async (req, reply, payload) => {
+  server.addHook("onSend", async (req: any, reply: any, payload: any) => {
     event.emit('onSend', req, reply, payload);
     return payload;
   })

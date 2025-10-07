@@ -1,3 +1,4 @@
+// @ts-ignore
 import Server from "@musistudio/llms";
 import { readConfigFile, writeConfigFile, backupConfigFile } from "./utils";
 import { checkForUpdates, performUpdate } from "./utils";
@@ -10,7 +11,7 @@ export const createServer = (config: any): Server => {
   const server = new Server(config);
 
   // Add endpoint to read config.json with access control
-  server.app.get("/api/config", async (req, reply) => {
+  server.app.get("/api/config", async (req: any, reply: any) => {
     return await readConfigFile();
   });
 
@@ -27,7 +28,7 @@ export const createServer = (config: any): Server => {
   });
 
   // Add endpoint to save config.json with access control
-  server.app.post("/api/config", async (req, reply) => {
+  server.app.post("/api/config", async (req: any, reply: any) => {
     const newConfig = req.body;
 
     // Backup existing config file if it exists
@@ -41,7 +42,7 @@ export const createServer = (config: any): Server => {
   });
 
   // Add endpoint to restart the service with access control
-  server.app.post("/api/restart", async (req, reply) => {
+  server.app.post("/api/restart", async (req: any, reply: any) => {
     reply.send({ success: true, message: "Service restart initiated" });
 
     // Restart the service after a short delay to allow response to be sent
@@ -62,12 +63,12 @@ export const createServer = (config: any): Server => {
   });
 
   // Redirect /ui to /ui/ for proper static file serving
-  server.app.get("/ui", async (_, reply) => {
+  server.app.get("/ui", async (_: any, reply: any) => {
     return reply.redirect("/ui/");
   });
 
   // 版本检查端点
-  server.app.get("/api/update/check", async (req, reply) => {
+  server.app.get("/api/update/check", async (req: any, reply: any) => {
     try {
       // 获取当前版本
       const currentVersion = require("../package.json").version;
@@ -85,7 +86,7 @@ export const createServer = (config: any): Server => {
   });
 
   // 执行更新端点
-  server.app.post("/api/update/perform", async (req, reply) => {
+  server.app.post("/api/update/perform", async (req: any, reply: any) => {
     try {
       // 只允许完全访问权限的用户执行更新
       const accessLevel = (req as any).accessLevel || "restricted";
@@ -105,7 +106,7 @@ export const createServer = (config: any): Server => {
   });
 
   // 获取日志文件列表端点
-  server.app.get("/api/logs/files", async (req, reply) => {
+  server.app.get("/api/logs/files", async (req: any, reply: any) => {
     try {
       const logDir = join(homedir(), ".claude-code-router", "logs");
       const logFiles: Array<{ name: string; path: string; size: number; lastModified: string }> = [];
@@ -139,7 +140,7 @@ export const createServer = (config: any): Server => {
   });
 
   // 获取日志内容端点
-  server.app.get("/api/logs", async (req, reply) => {
+  server.app.get("/api/logs", async (req: any, reply: any) => {
     try {
       const filePath = (req.query as any).file as string;
       let logFilePath: string;
@@ -167,7 +168,7 @@ export const createServer = (config: any): Server => {
   });
 
   // 清除日志内容端点
-  server.app.delete("/api/logs", async (req, reply) => {
+  server.app.delete("/api/logs", async (req: any, reply: any) => {
     try {
       const filePath = (req.query as any).file as string;
       let logFilePath: string;

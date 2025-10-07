@@ -148,8 +148,10 @@ export const router = async (req: any, _res: any, context: any) => {
   }
   const lastMessageUsage = sessionUsageCache.get(req.sessionId);
   const { messages, system = [], tools }: MessageCreateParamsBase = req.body;
+  // @ts-ignore
   if (config.REWRITE_SYSTEM_PROMPT && system.length > 1 && system[1]?.text?.includes('<env>')) {
     const prompt = await readFile(config.REWRITE_SYSTEM_PROMPT, 'utf-8');
+    // @ts-ignore
     system[1].text = `${prompt}<env>${system[1].text.split('<env>').pop()}`
   }
 

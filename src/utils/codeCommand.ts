@@ -22,7 +22,14 @@ export async function executeCodeCommand(args: string[] = []) {
     DISABLE_COST_WARNINGS: 'true',
     API_TIMEOUT_MS: String(config.API_TIMEOUT_MS ?? 600000), // Default to 10 minutes if not set
   };
-  const settingsFlag = {
+  const settingsFlag: {
+    env: Record<string, string>;
+    statusLine?: {
+      type: string;
+      command: string;
+      padding: number;
+    };
+  } = {
     env
   };
   if (config?.StatusLine?.enabled) {
